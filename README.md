@@ -18,8 +18,8 @@ Core Functionality:
 
 4) Results screen showing:
    Total time
-   Moves (placeholder)
-   Matched pairs (placeholder)
+   Moves 
+   Matched pairs 
 
 5) Component-based structure (Card, Home, Game, Results)
 
