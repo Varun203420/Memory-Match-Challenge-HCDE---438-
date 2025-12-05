@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
 import Card from "../components/Card";
 
-// create pairs based on difficulty and shuffle
+// ⭐ Firebase imports
+import { db } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
+
+// --------------------------------------
+// Helper: Create shuffled cards
+// --------------------------------------
 function createShuffledCards(difficulty) {
   let pairCount;
 
   if (difficulty === "easy") {
-    pairCount = 4;  // 4 pairs = 8 cards
+    pairCount = 4; // 4 pairs = 8 cards
   } else if (difficulty === "medium") {
-    pairCount = 6;  // 6 pairs = 12 cards
+    pairCount = 6; // 6 pairs = 12 cards
   } else {
-    pairCount = 8;  // hard -> 8 pairs = 16 cards
+    pairCount = 8; // 8 pairs = 16 cards
   }
 
   const baseValues = Array.from({ length: pairCount }, (_, i) => i + 1);
@@ -32,6 +38,9 @@ function createShuffledCards(difficulty) {
   return cards;
 }
 
+// --------------------------------------
+// Main Game Component
+// --------------------------------------
 function Game({ difficulty, onGameOver, onQuit }) {
   const [seconds, setSeconds] = useState(0);
   const [cards, setCards] = useState(() => createShuffledCards(difficulty));
@@ -40,7 +49,9 @@ function Game({ difficulty, onGameOver, onQuit }) {
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
 
-  // timer
+  // --------------------------------------
+  // Timer
+  // --------------------------------------
   useEffect(() => {
     const id = setInterval(() => {
       setSeconds((s) => s + 1);
@@ -49,6 +60,9 @@ function Game({ difficulty, onGameOver, onQuit }) {
     return () => clearInterval(id);
   }, []);
 
+  // --------------------------------------
+  // Card Flip Logic
+  // --------------------------------------
   const handleCardClick = (index) => {
     if (isBusy) return;
 
@@ -58,10 +72,12 @@ function Game({ difficulty, onGameOver, onQuit }) {
     const newCards = cards.map((c, i) =>
       i === index ? { ...c, isFlipped: true } : c
     );
+
     const newFlipped = [...flippedIndexes, index];
 
     setCards(newCards);
     setFlippedIndexes(newFlipped);
+
 
     if (newFlipped.length === 2) {
       setIsBusy(true);
@@ -71,28 +87,28 @@ function Game({ difficulty, onGameOver, onQuit }) {
       const firstCard = newCards[firstIndex];
       const secondCard = newCards[secondIndex];
 
+      // Match
       if (firstCard.value === secondCard.value) {
-        // match
-        const updatedCards = newCards.map((c, i) => {
-          if (i === firstIndex || i === secondIndex) {
-            return { ...c, isMatched: true };
-          }
-          return c;
-        });
+        const updatedCards = newCards.map((c, i) =>
+          i === firstIndex || i === secondIndex
+            ? { ...c, isMatched: true }
+            : c
+        );
 
         setCards(updatedCards);
         setMatchedPairs((p) => p + 1);
         setFlippedIndexes([]);
         setIsBusy(false);
-      } else {
-        // no match -> flip back after delay
+      }
+
+
+      else {
         setTimeout(() => {
-          const resetCards = newCards.map((c, i) => {
-            if (i === firstIndex || i === secondIndex) {
-              return { ...c, isFlipped: false };
-            }
-            return c;
-          });
+          const resetCards = newCards.map((c, i) =>
+            i === firstIndex || i === secondIndex
+              ? { ...c, isFlipped: false }
+              : c
+          );
           setCards(resetCards);
           setFlippedIndexes([]);
           setIsBusy(false);
@@ -101,14 +117,28 @@ function Game({ difficulty, onGameOver, onQuit }) {
     }
   };
 
-  const handleFinish = () => {
-    onGameOver({
+  // --------------------------------------
+  // Finish Game → Save Score to Firebase
+  // --------------------------------------
+  const handleFinish = async () => {
+    const stats = {
       time: seconds,
       moves,
       matchedPairs,
       difficulty,
-    });
+      createdAt: new Date(),
+    };
+
+    try {
+      await addDoc(collection(db, "scores"), stats);
+      console.log("Score saved to Firestore");
+    } catch (err) {
+      console.error("Error saving score:", err);
+    }
+
+    onGameOver(stats);
   };
+
 
   const handleReset = () => {
     setCards(createShuffledCards(difficulty));
@@ -118,6 +148,7 @@ function Game({ difficulty, onGameOver, onQuit }) {
     setFlippedIndexes([]);
     setIsBusy(false);
   };
+
 
   return (
     <main className="game">
