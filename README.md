@@ -102,7 +102,6 @@ npm run build
 AI assistance (ChatGPT) was used for:
 - Debugging React state logic  
 - Improving UI layout and CSS responsiveness  
-- Generating explanatory documentation text  
 - Structuring Firebase write operations  
 
 All code was reviewed, tested, and integrated manually by the student.
@@ -128,5 +127,4 @@ Overall, this project improved both my technical and design skills, gave me conf
 
 ---
 
-## License
-This project is for academic use under HCDE 438.
+##
